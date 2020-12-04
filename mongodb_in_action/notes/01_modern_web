@@ -100,3 +100,178 @@
     - Collections do not enforce any sort of schema.  Your application code enforces the 
         structure of the data, which can speed up initial development when the schema is
         changing frequently.  Also, the items can have a dynamic set of attributes.
+
+
+
+- Ad Hoc Queries
+
+    - Relational DBs support ad hoc queries, but some data stores do not.  For instance, 
+        key/value stores are queryable by the key only.  Key/value store sacrifice rich
+        query power in exchange for a simple scalability model.
+
+
+    - One of MongoDB's design goals is to preserve most of the query power from relational
+        DBs.
+
+
+    - Suppose you want to find all the posts tagged 'politics' that have more than 10 votes.
+        In SQL, the query would look like:
+
+        SELECT * FROM posts
+        INNER JOIN posts_tags ON posts.id = posts_tags.post_id
+        INNER JOIN tags ON posts_tags.tag_id == tags.id 
+        WHERE tags.text = 'politics' 
+        AND posts.vote_count > 10;
+
+      In Mongo, we would make this query using a document as a matcher.
+
+        db.posts.find({'tags': 'politics', 'vote_count': {'$gt': 10}});
+
+
+
+- Indexes
+
+    - In order to avoid linear searches through collections we need to create indexes.
+        Mongo uses B-Tree indexes.
+
+
+    - Starting with Mongo 3.2, WiredTiger will also support LSM indexes.
+
+
+    - Many NoSQL databases, such as HBase, are considered key/value stores, because they
+        don't allow secondary indexes.  Mongo does allow secondary indexes, (ie can index
+        by id and tag).
+
+
+    - Mongo collections can have up to 64 indexes.  They include:
+
+        - ascending
+        - descending
+        - unique
+        - compound-key
+        - hashed
+        - text
+        - geospatial
+
+
+
+- Replication
+
+    - Replica sets distributed data across 2 or more machines for redundancy and automate
+        failover in the event of server failures or network outages.
+
+
+    - Replication is also used to scale database reads.  Many web applications are 
+        read-intensive.
+
+
+    - Replica sets consist of many Mongo servers.  At any given time, one node is the primary
+        and one or more nodes serve as secondaries.  The primary accepts reads and writes, 
+        but the secondaries only accept reads.
+
+
+    - If the primary node fails, the cluster will pick a secondary node and automatically 
+        promote it to primary.  When the former primary comes back online, it will do so
+        as a secondary.
+
+
+
+- Speed and Durability
+
+    - In database systems, there is an inverse relationship between write speed and
+        durability.
+
+
+    - For instance, if you write 100 records of 50 KB each to a database, then immediately
+        cut power to the database, will those records be recoverable when you bring the
+        machine back online?
+
+
+    - Most databases enable good durability by default.  For some applications, like storing
+        log lines, it might make sense to have faster data writes, even if you risk
+        data loss.
+
+
+    - The problems arise from the mismatches between writing to a hard drive and writing to
+        RAM.  Certain databases, like Memcached, write only to RAM, which makes them 
+        extremely fast but completely volatile.
+
+
+    - On the other had, few databases write exclusively to disk, since this makes them
+        extremely slow.  Database designers must find the best balance of speed and durability.
+
+
+    - Transaction Logging
+
+        - One compromise between speed and durability can be seen in MySQL's InnoDB.  Since it
+            is a transactional storage engine, it must guarantee durability.  
+
+        - It accomplishes this by writing its updates in 2 places:
+
+            1. A transaction log
+            2. An in-memory buffer pool
+
+        - The transaction log is synced to disk immediately, whereas the buffer pool is only
+            eventually synced by a background thread.
+
+        - The reason for this dual write is that random I/O is much slower than sequential I/O.
+            Writing to the transaction log is sequential, and the writes to the buffer pool are
+            random.  
+
+        - In the event of an unclean shutdown, the transaction log can be replayed to make sure
+            all the updates succeed.
+
+
+
+- Speed and Durability in Mongo
+
+    - In Mongo's case, the users control the speed and durability trade-off by choosing write
+        semantics and deciding whether to enable journaling.
+
+
+    - Mongo guarantees that a write has been written to RAM before returning to the user, 
+        though this characteristic is configurable.
+
+        - You can configure Mongo to be 'fire-and-forget', sending off a write to the server
+            without waiting for an acknowledgment.  Before v2.0, this was the default.
+
+        - You can configure Mongo to guarantee that a write has gone to multiple replices before
+            considering it committed.
+
+
+    - Since v2.0, journaling has been enabled by default.  With 'journaling', every write is
+        flushed to the journal file every 100 ms.  If an unclean shutdown happens, the journal
+        will be used to ensure Mongo's data files are consistent when you restart the server.
+        This is the safest way to run Mongo.
+
+
+    - It's also possible to run Mongo without journaling to increase write performance.  The
+        downside is that data files could be corrupted after an unclean shutdown, so anyone
+        disabling journaling should run with replication, preferable to a second datacenter.
+
+
+
+- Scaling
+
+    - The easiest way to scale most databases is vertically scaling (aka 'scaling up')
+        by upgrading the hardware.
+
+
+    - When you reach the point where it's no longer feasible to move to a better machine,
+        you want to scale horizontally (aka 'scaling out').  By distributing the data
+        over multiple machines, you can reduce your hosting costs and mitigate the 
+        consequences of failure.
+
+
+    - Mongo uses a range-based partitioning mechanism called 'sharding', which automatically
+        manages the distribution of data across nodes.  There are also hash- and tag-
+        based sharding, but they're just another form of range-based sharding.
+
+
+    - The sharding system handles the addition of shard nodes, and also facilitates an 
+        automatic failover.  Individual shards are made up of a replica set containing at
+        least 2 nodes, ensuring automatic recovery with no single point of failure.
+
+
+    - Your application code doesn't need to handle any of these logistics.  It communicates
+        with a sharded cluster just as it speaks to a single node.
