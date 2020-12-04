@@ -1,0 +1,117 @@
+----------------------------------------------------
+CHAPTER 4 - QUERYING
+----------------------------------------------------
+
+- The 'find' Method
+
+    - The 'find' method is used to perform queries in Mongo.  
+
+        // Returns all documents in the collection
+        > db.c.find()
+
+        // Returns all documents matching a condition
+        > db.users.find({'age' : 27})
+
+        // Multiple conditions
+        > db.users.find({'username' : 'joe', 'age' : 27})
+
+
+    - You can specify which keys to return.
+
+        // Return only the username and email keys
+        > db.users.find({}, {'username' : 1, 'email' : 1})
+
+        // Return all keys except for fatal_weakness
+        > db.users.find({}, {'fatal_weakness' : 0})
+
+
+    - Note that query documents must be constants as far as the database is concerned.
+
+        // This won't work
+        > db.stock.find({'in_stock' : 'this.num_sold'})
+
+
+
+- Query Criteria
+
+    - Queries can go beyond the exact matching described previously.  They can match more complex criteria,
+        such as ranges, OR-clauses, and negation.
+
+
+    - The comparison operators are '$lt', '$lte', '$gt', and '$gte'.  
+
+        // Users 18-30 years old
+        > db.users.find({'age' : {'$gte' : 18, '$lte' : 30}})
+
+        // Users who registered before 2007
+        > start = new Date('01/01/2007')
+        > db.users.find({'registered' : {'$lt' : start}})
+
+
+    - The '$ne' operator is used for 'not equal'.
+
+        // Users not named 'joe'
+        > db.users.find ({'username' : {'$ne' : 'joe'}})
+
+
+    - The '$in' and '$nin' operators are used for testing membership.
+
+        // Member in a set
+        > db.raffle.find({'ticket_no' : {'$in' : [390, 542, 725]}})
+
+        // Not a member
+        > db.raffle.find({'ticket_no' : {'$nin' : [390, 542, 725]}})
+
+
+    - The '$or' operator is used for OR queries.
+
+        // Ticket number 725 or a winning ticket
+        > db.raffle.find({'$or' : [{'ticket_no' : 725}, {'winner' : true}]})
+
+
+    - The '$not' operator can negate any other condition.
+
+        // Users whose id % 5 == 1
+        > db.users.find({'id_num' : {'$mod' : [5, 1]}})
+
+        // Users whose id % 5 != 1
+        > db.users.find({'id_num' : {'$not' : {'$mod' : [5, 1]}}})
+
+
+
+- Type-Specific Queries
+
+    - Matching 'null' is a bit more complicated, because 'null' matches itself and also matches 'does not 
+        exist'.  Thus, querying for null returns all documents lacking the key, as well as all documents
+        in which the key has the value 'null'.
+
+        // 'y' is null or 'y' is not present
+        > db.c.find({'y' : null})
+
+        // 'y' exists and is null
+        > db.c.find({'y' : {'$eq' : null, '$exists' : true}})
+
+
+    - Regular expressions can be matched.
+
+        // Query with a regex
+        > db.users.find({'name' : {'$regex' : /joe/i }})
+
+        // More complex regex
+        > db.users.find({'name' : /joey?/i })
+
+
+
+- Matching Arrays
+
+    - Arrays can also be queried.
+
+        // If we have this array in the document
+        > db.food.insertOne({'fruit' : ['apple', 'banana', 'peach']})
+
+        // Then this query will match the document
+        > db.food.find({'fruit' : 'banana'})
+
+
+
+- Using $ALL

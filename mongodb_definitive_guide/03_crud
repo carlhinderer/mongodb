@@ -1,0 +1,368 @@
+----------------------------------------------------
+CHAPTER 3 - CRUD
+----------------------------------------------------
+
+- Inserting Documents
+
+    - To insert a single document, the 'insertOne' method is used.
+
+        > db.movies.insertOne({'title': 'Stand By Me'})
+
+
+    - To insert multiple documents, the 'insertMany' method is used.  Instead of making a round trip to
+        the database for each insert, they will be inserted in bulk.
+
+        > db.movies.insertMany([{'title': 'Ghostbusters'},
+                                {'title': 'E.T.'},
+                                {'title': 'Blade Runner'}]);
+
+
+    - Current versions of Mongo don't support messages longer than 48 MB, so there is a hard limit to how
+        many inserts can be done at one time.  If you try to insert more than 48MB, many drivers will split
+        your insert into multiple 48MB operations.
+
+
+    - There are 2 options for dealing with errors that occur during 'insertMany' operations.
+
+        1. If we specify 'true' for the 'ordered' key, the insert will ensure that the documents are
+             inserted in the order they are provided.  If a document produces an error during the insert,
+             no documents beyond that point in the array will be inserted.  This is the default option
+             for 'insertMany'.
+
+        2. If we specfiy 'false' for the 'ordered' key, Mongo may reorder the inserts to improve
+             performance.  If an error occurs, the insert operation will keep trying to insert as many
+             documents as possible.
+
+
+        // Unordered insertMany, fails since the ids are duplicated
+        > db.movies.insertMany([
+            {'_id' : 3, 'title' : 'Sixteen Candles'},
+            {'_id' : 4, 'title' : 'The Terminator'},
+            {'_id' : 4, 'title' : 'The Princess Bride'},
+            {'_id' : 5, 'title' : 'Scarface'}],
+          {'ordered': false})
+
+
+    - The validation done on insert operations is minimal.  It checks the document's basic structure, adds
+        an '_id' field if one does not exist, and makes sure all documents are less than 16 MB.
+
+
+    - In Mongo versions <3.0, the 'insert' operation was the primary method for inserting documents.  As
+        of Mongo 3.2, this is still suppored for backwards compatibility.
+
+
+
+- Removing Documents
+
+    - The 'deleteOne' method is used to delete a document.  It will delete the first document that matches
+        the filter.
+
+        > db.movies.deleteOne({'_id' : 4})
+
+
+    - The 'deleteMany' method will delete all documents that match the filter.
+
+        > db.movies.deleteMany({'year' : 1984})
+
+
+    - In Mongo versions <3.0, the 'remove' operations was the primary method for deleting documents.
+
+
+    - If you want to clear an entire collection, it is faster to use the 'drop' method.
+
+        > db.movies.drop()
+
+
+
+- Updating Documents
+
+    - The 'updateOne' and 'updateMany' operations each take a filter document as their first parameter
+        and the changes to make as the second parameter.  
+
+
+    - The 'replaceOne' method takes a filter as its first parameter, then the document that will replace it
+        as the second parameter.
+
+
+
+- Document Replacement
+
+    - The 'replaceOne' operation can be useful when making major schema changes.  For instance, suppose
+        we have a document like this:
+
+        {
+          '_id' : ObjectId('4b2b9f67a1f631733d917a7a'),
+          'name' : 'joe',
+          'friends' : 32,
+          'enemies' : 2
+        }
+
+
+    - Now, let's say we want to move the 'friends' and 'enemies' fields into a 'relationships' subdocument.
+        We can change the structure of the document in the shell, then replace the database's version
+        of the document with 'replaceOne'.
+
+        > var joe = db.users.findOne({'name' : 'joe'});
+        > joe.relationships = {'friends' : joe.friends, 'enemies' : joe.enemies};
+        > joe.username = joe.name;
+
+        > delete joe.friends;
+        > delete joe.enemies;
+        > delete joe.name;
+
+        > db.users.replaceOne({'name' : 'joe'}, joe);
+
+
+    - Note that this will cause an error, since there are multiple documents that match the condition
+        to the 'replaceOne', and the insert will cause a duplicate key error.  This is a very common 
+        error!
+
+        // There are 3 people with name 'joe'
+        > db.people.find()
+        {"_id" : ObjectId("4b2b9f67a1f631733d917a7b"), "name" : "joe", "age" : 65},
+        {"_id" : ObjectId("4b2b9f67a1f631733d917a7c"), "name" : "joe", "age" : 20},
+        {"_id" : ObjectId("4b2b9f67a1f631733d917a7d"), "name" : "joe", "age" : 49},
+
+        > joe = db.people.findOne({"name" : "joe", "age" : 20});
+        {
+          "_id" : ObjectId("4b2b9f67a1f631733d917a7c"),
+          "name" : "joe",
+          "age" : 20
+        }
+
+        > joe.age++;
+        > db.people.replaceOne({"name" : "joe"}, joe);
+        E11001 duplicate key on update
+
+
+        // Using the _id for the filter will guarantee you won't have a duplicate key problem
+        > db.people.replaceOne({'_id' : ObjectId("4b2b9f67a1f631733d917a7c")})
+
+
+
+- Using Update Operators
+
+    - Usually, only certain portions of a document need to be updated.  You can update specific fields in
+        a document using atomic 'update operators'.  Update operators are special keys that can be used
+        to specify complex update operations.
+
+
+    - For instance, if we have the following document:
+
+        {
+          '_id' : ObjectId('4b253b067525f35f94b60a31'),
+          'url' : 'www.example.com',
+          'pageviews' : 52
+        }
+
+      To increment the page views, we use the '$inc' modifier:
+
+        > db.analytics.updateOne({'url' : 'www.example.com'}, 
+                                 {'$inc' : {'pageviews' : 1}})
+
+
+    - The '$set' modifier sets the value of a field.  If the field does not yet exist, it will be 
+        created.  
+
+        > db.users.updateOne({'_id' : ObjectId('4b253b067525f35f94b60a31')},
+                             {'$set' : {'favorite book' : 'War and Peace'}})
+
+
+    - To remove a key from the document, the '$unset' modifier can be used.
+
+        > db.users.updateOne({'name' : 'joe'},
+                             {'$unset' : {'favorite book' : 1}})
+
+
+    - The '$set' modifier can also be used to add and alter subdocuments.
+
+        > db.blog.posts.updateOne({'author.name' : 'joe'},
+                                  {'$set' : {'author.name' : 'joe schmoe'}})
+
+
+
+- Incrementing and Decrementing
+
+    - The '$inc' operator will add a new integer key if one does not yet exist.
+
+        // Initialize the 'score' key with an initial value
+        > db.games.updateOne({'game' : 'pinball', 'user' : 'joe'}, 
+                             {'$inc' : {'score' : 50}})
+
+        // Increment the score by 100
+        > db.games.updateOne({'game' : 'pinball', 'user' : 'joe'},
+                             {'$inc' : {'score' : 100}})
+
+        // Pass in a negative number to decrement
+        > db.games.updateOne({'game' : 'pinball', 'user' : 'joe'},
+                             {'$inc' : {'score' : -1}})
+
+
+- Array Operators
+
+    - The '$push' modifier adds elements to the end of an array.  If the array doesn't yet exist, it will
+        be created.
+
+        // Create the 'comments' array and add a comment to it
+        > db.blog.posts.updateOne({'title' : 'A blog post'},
+                                  {'$push' : {'comments' : 
+                                                 {'name' : 'joe',
+                                                  'email' : 'joe@example.com',
+                                                  'content' : 'Great Post!'} })
+
+
+    - To push multiple values in one operation, the '$each' modifier is used.
+
+        // Add the 'hourly' array and add multiple values to it
+        > db.stock.ticker.updateOne({'_id' : 'GOOG'},
+                                    {'$push' : {'hourly' :
+                                                  {'$each' : [562.77, 562.79, 559.12]}} })
+
+
+    - We can also limit the size of the array by using the '$slice' modifier to prevent an array from 
+        growing beyond a certain size.
+
+        // Limit the array to the last 10 elements pushed
+        > db.movies.updateOne({'genre' : 'horror'},
+                              {'$push' : {'top10' :
+                                             '$each' : ['Nightmare on Elm Street', 'Saw'],
+                                             '$slice' : -10} })
+
+
+    - We can even sort the objects before slicing them.
+
+        // Sort by rating, then limit size to 10
+        db.movies.updateOne({'genre' : 'horror'},
+                            {'$push' : ['top10' : {'$each' : [{'name' : 'Nightmare on Elm Street', 
+                                                               'rating' : 6.6},
+                                                              {'name' : 'Saw',
+                                                               'rating' : 4.3}]
+                                                   '$slice' : -10,
+                                                   '$sort' : {'rating' : -1}} ]})
+
+
+
+- Using Arrays as Sets
+
+    - We can also treat an array as a set, only adding values if they are not already present.  This is
+        done by using '$ne' in the query document.
+
+        // Add an author to the citations if they aren't already there
+        > db.papers.updateOne({'authors cited' : {'$ne' : 'Richie'}},
+                              {'$push' : {'authors cited' : 'Richie'}})
+
+
+    - The '$addToSet' modifier can be used to do the same thing.
+
+        // Add an email address if it isn't already present
+        > db.users.updateOne({'_id' : ObjectId("4b2d75476cc613d5ee930164"},
+                             {'$addToSet' : {'emails' : 'joe@example.com'}})
+
+
+
+- Removing Elements from an Array
+
+    - The '$pop' operation can be used to remove elements from either end of the array.
+
+        // Remove an element from the end of the array
+        {'$pop' : {'key' : 1}}
+
+        // Remove an element from the beginning of the array
+        {'$pop' : {'key' : -1}}
+
+
+    - The '$pull' operation is used to remove an element based on specific criteria.
+
+        // Create an array
+        > db.lists.insertOne({'todo' : ['dishes', 'laundry', 'dry cleaning'] })
+
+        // Remove laundry from our todo list
+        > db.lists.updateOne({}, {'$pull' : {'todo' : 'laundry'}})
+
+
+
+- Positional Array Modifications
+
+    - We can modify array elements by position.
+
+        // This is our document
+        > db.blog.posts.findOne()
+
+        {
+            "_id" : ObjectId("4b329a216cc613d5ee930192"),
+            "content" : "...",
+            "comments" : [
+                {
+                    "comment" : "good post",
+                    "author" : "John",
+                    "votes" : 0
+                },
+                {
+                    "comment" : "i thought it was too short",
+                    "author" : "Claire",
+                    "votes" : 3
+                },
+                {
+                    "comment" : "free watches",
+                    "author" : "Alice",
+                    "votes" : -1
+                }
+            ]
+        }
+
+
+        // Increment the number of votes for the first comment
+        > db.blog.updateOne({'post' : post_id},
+                            {'$inc' : {'comments.0.votes' : 1}})
+
+
+
+- Upserts
+
+    - With upserts, if no document is found that matches the update criteria, a new document will be 
+        created by combining the criteria and updated documents.  If a matching update is found, it will
+        be updated normally.
+
+        // If the url exists, increment the page views.  Otherwise, insert the url.
+        > db.analytics.updateOne({'url' : '/blog'},
+                                 {'$inc' : {'pageviews' : 1}},
+                                 {'upsert' : true})
+
+
+- The 'save' Shell Helper
+
+    - The 'save' function is a shell function that lets you insert a document if it doesn't exist and
+        update it if it does.  It takes the document as a parameter.  If the document contains an 
+        '_id' key, an upsert will be performed.  Otherwise, an insert will be performed.
+
+        > var x = db.testcol.findOne()
+        > x.num = 42
+        > db.testcol.save(x)
+
+
+
+- Updating Multiple Documents
+
+    - The 'updateMany' method is used to update a set of matching documents.
+
+        // Insert several records
+        > db.users.insertMany([
+                                {birthday: '10/13/1978'},
+                                {birthday: '10/13/1978'},
+                                {birthday: '10/13/1978'}
+                              ])
+
+        // Update all the records
+        > db.users.updateMany({'birthday': '10/13/1978'},
+                              {'$set' : {'gift' : 'Happy Birthday!'}})
+
+
+
+- Returning Updated Documents
+
+    - The 'findOneAndDelete', 'findOneAndReplace', and 'findOneAndUpdate' methods are conveniences that
+        combine a find operation with another operation.
+
+        db.processes.findOneAndUpdate({"status" : "READY"},
+                                      {"$set" : {"status" : "RUNNING"}},
+                                      {"sort" : {"priority" : -1}, "returnNewDocument": true})

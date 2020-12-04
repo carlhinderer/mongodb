@@ -1,0 +1,530 @@
+----------------------------------------------------
+CHAPTER 2 - GETTING STARTED
+----------------------------------------------------
+
+- Basic Mongo Concepts
+
+    - A 'document' is the basic unit of data.  It is roughly equivalent to a row in a table.
+
+    - A 'collection' is similar to a table, with a dynamic schema.
+
+    - A single instance of Mongo can hold multiple independent 'databases', each of which can have its
+        own collections.
+
+    - Each document has a special key, '_id', that is unique within a collection.
+
+    - Mongo is distributed with a simple but powerful tool called the mongo 'shell'.  The shell provides
+        built-in support for administering Mongo instances and manipulating data.  It is also a fully
+        functional JavaScript interpreter.
+
+
+
+- Documents
+
+    - A document is an ordered set of keys with associated values.  The representation of a document 
+        varies by programming language.  For example, in JavaScript, documents are represented as
+        objects:
+
+        {
+          "greeting" : "Hello, world!",
+          "views": 3
+        }
+
+
+    - The keys in a document are strings.  All UFF-8 characters are allowed, except '\0', '.', and
+        '$'.
+
+
+    - Mongo is type-sensitive and case-sensitive.
+
+        // These are different documents
+        {"count" : 5}
+        {"count" : "5"}
+
+        // These are different also
+        {"count" : 5}
+        {"Count" : 5}
+
+
+    - A document cannot contain duplicate keys.
+
+
+    - Key/value pairs in documents are ordered, but in general you should not design your schema to depend
+        on this ordering.  
+
+
+
+- Collections
+
+    - A collection is a group of documents.  Collections have dynamic schemas, which means that the
+        documents within a collection can have any number of different keys and values.
+
+
+    - Since collections don't enforce a schema, why should we have them at all?  They can logically
+        group related documents together.  It also speeds up queries, because we can narrow the space
+        of documents to search, and we can create indexes on individual collections.
+
+
+    - Collections have a unique UTF-8 name.  The can contain any character besides '\0', ' ', or '$',
+        and cannot begin with 'system.'
+
+
+    - Namespaced subcollections can be referenced using the . operator.  For example, we could have a 
+        collection named 'blog.posts' and another named 'blog.authors'.  
+
+
+
+- Databases
+
+    - Mongo groups collections into databases.  A single instance of Mongo can host multiple databases,
+        each of which groups together 0 or more collections.
+
+
+    - Databases also have a name.  They cannot contain spaces and should consist of alphanumeric ASCII.
+        Database names are case-sensitive, and to keep things simple, we can just use lowercase names.
+
+
+    - The database names will actually end up as files on your filesystem, which is the reasons for the
+        restrictions on the names.
+
+
+    - There are several reserved names, because they refer to special databases that may be present in
+        your system.  
+
+        admin  = The 'admin' database plays a role in authentication and authorization.  Also, access to
+                   this database is rqeuired for some admin operations.
+
+        local  = The 'local' database stores data specific to a single server.  In replica sets, this
+                   database stores data used in the replication process.  The 'local' database itself
+                   is never replicated.
+
+        config = Sharded Mongo clusters use the 'config' database to store information about each shard.
+
+
+    - By concatenating the database and collection names, you can get a fully qualified collection name
+        called a 'namespace'.  For instance, if you are using the 'blog.posts' collection in the 'cms'
+        database, the namespace of the collection is 'cms.blog.posts'.  Namespaces should be less than
+        100 bytes long.
+
+
+
+- Running the Mongo Server
+
+    - The MongoDB server is installed as a service in Ubuntu.
+
+        # Check the service status
+        $ sudo systemctl status mongodb
+
+        # Verify the service is responding with a diagnostic command
+        $ mongo --eval 'db.runCommand({ connectionStatus: 1 })'
+
+
+        # Start the server manually
+        $ sudo systemctl start mongodb
+
+        # Stop the server
+        $ sudo systemctl stop mongodb
+
+        # Restart the server
+        $ sudo systemctl restart mongodb
+
+
+        # Enable the server to start automatically
+        $ sudo systemctl enable mongodb
+
+        # Disable the server from starting automatically
+        $ sudo systemctl disable mongodb
+
+
+
+- Running the Mongo Shell
+
+    - The JavaScript shell is used to interact with the server.
+
+        # Run the shell
+        $ mongo
+
+
+        # All the standard JavaScript syntax and libraries work in the shell
+        > x = 200;
+        > x / 5;
+        > Math.sin(Math.PI / 2);
+        > new Date("2018/1/1");
+        > "Hello World!".replace("World", "MongoDB");
+
+
+        # We can even define and call Javascript functions
+        > function factorial (n) {
+            if (n <= 1) return 1;
+            return n * factorial (n - 1);
+        }
+
+        > factorial(5);
+
+
+    - On startup, the shell connects to the 'test' database on a Mongo server and assigns this database
+        connection to the global variable 'db'.  This variable is the primary access point to your
+        Mongo server through the shell.
+
+        # See the database 'db' is currently assigned to
+        > db
+
+        # Switch to the 'video' db
+        > use video
+
+
+
+- Creating Documents in the Shell
+
+    - The 'insertOne' function add a document to a collection.  
+
+        # Create a local variable called 'movie'
+        > movie = {"title" : "Star Wars: Episode IV - A New Hope",
+                   "director" : "George Lucas",
+                   "year" : 1977}
+
+
+        # Save the movie to our 'movies' collection
+        > db.movies.insertOne(movie)
+
+        {
+          "acknowledged" : true,
+          "insertedId" : ObjectId("5721794b349c32b32a012b11")
+        }
+
+
+
+- Reading Documents in the Shell
+
+    - The 'find' and 'findOne' functions can be used to query a collection.
+
+        # See the movies in our collection
+        > db.movies.find()
+
+        {
+          "_id" : ObjectId("5721794b349c32b32a012b11"),
+          "title" : "Star Wars: Episode IV - A New Hope",
+          "director" : "George Lucas",
+          "year" : 1977
+        }
+
+
+        # See one movie from our collection
+        > db.movies.findOne()
+
+        {
+          "_id" : ObjectId("5721794b349c32b32a012b11"),
+          "title" : "Star Wars: Episode IV - A New Hope",
+          "director" : "George Lucas",
+          "year" : 1977
+        }
+
+
+
+- Updating Documents in the Shell
+
+    - We can use the 'update' function to modify our document.  The function takes 2 parameters: the 
+        criteria to find which document to update and the new document.
+
+        # Add field for reviews in our document
+        > db.movies.update({title : "Star Wars: Episode IV - A New Hope"},
+                           {$set : {reviews: []}})
+
+        { "acknowledged" : true, "matchedCount" : 1, "modifiedCount" : 1 }
+
+
+        # Make sure are new field is in the document
+        > db.movies.find()
+
+        {
+          "_id" : ObjectId("5721794b349c32b32a012b11"),
+          "title" : "Star Wars: Episode IV - A New Hope",
+          "director" : "George Lucas",
+          "year" : 1977,
+          "reviews" : [ ]
+        }
+        
+
+
+- Deleting Documents in the Shell
+
+    - The 'deleteOne' and 'deleteMany' functions delete documents from the database.  Both functions
+        take filters specifying criteria for removal.
+
+        # Delete the movie we created
+        > db.movies.deleteOne({title: "Star Wars: Episode IV - A New Hope"})
+
+
+
+- Data Types
+
+    - Documents in Mongo can be thought of as 'JSON-like', since they are conceptually similar to 
+        objects in JavaScript.  They have all the basic JSON types (null, boolean, numeric, string,
+        array, object), as well as a few other types.
+
+        1. null
+
+             {"x" : null}
+
+        2. boolean
+
+             {"x" : true}
+
+        3. numeric
+
+             # Floating Point
+             {"x" : 3.14}
+             {"x" : 3}
+
+             # Integers
+             {"x" : NumberInt("3")}
+             {"x" : NumberLong("3")}
+
+        4. string
+
+             {"x" : "foobar"}
+
+        5. date
+
+             # Dates are stored in 64-bit integers representing milliseconds since Unix epoch
+             {"x" : new Date()}
+
+        6. regular expressions
+
+             {"x" : /foobar/i}
+
+        7. array
+
+             {"x" : ["a", "b", "c"]}
+
+        8. embedded document
+
+             {"x" : {"foo" : "bar"}}
+
+        9. object id
+
+             # An object id is a 12-byte ID for documents
+             {"x" : ObjectId()}
+
+        10. binary data
+
+              # Binary data is a string of arbitrary bytes.  It is the only way to store non-UTF8 strings.
+
+        11. code
+
+              # Arbitrary JavaScript may be stored in queries and documents
+              {"x" : function() { /*...*/ } }
+
+
+
+- Dates
+
+    - In JavaScript, the 'Date' class is used for Mongo's date type.  When creating a new 'Date' object,
+        we always call 'new Date()'.   Calling the constructor as a function ('Date()') without 'new'
+        returns a string representation of the date, not an actual 'Date' object.
+
+    - Dates in the shell are displayed using local time zone settings.  However, dates in the database
+        are just stored as milliseconds since the epoch, with no time zone information.
+
+
+
+- Arrays
+
+    - Arrays can be used for both ordered operations (as lists, stacks, or queues) and unordered operations
+        (as sets).  Arrays are heterogenous.  
+
+    - Mongo understands array structures and knows how to reach inside of arrays to perform operations
+        on their contents.  This allows us to query on arrays and build indexes using their contents.
+
+    - Mongo also allows atomic updates that modify the contents of arrays.
+
+
+
+- Embedded Documents
+
+    - Documents can be used as the value for a key.  
+
+        {
+          "name" : "John Doe",
+          "address" {
+            "street" : "123 Park Street",
+            "city" : "Anytown",
+            "state" : "NY"
+          }
+        }
+
+
+
+- _id and ObjectIds
+
+    - Every document stored in Mongo must have an "_id" key.  The '_id' key's value can be any type, but
+        it defaults to an 'ObjectId'.  In a single collection, every document must have a unique value
+        for "_id", which ensures that every document in a collection can be uniquely identified.
+
+    - The 'ObjectId' class is designed to be lightweight, while still being easy to generate in a globally
+        unique way across different machines.  Mongo's distributed nature is the reason why it uses
+        ObjectIds as opposed to something more traditional like an auto-incrementing primary key.
+
+
+    - The ObjectId is 12 bytes:
+
+        Bytes 0-3: Timestamp (Second; this means documents will be sorted in roughly insertion order)
+        Bytes 4-6: Machine (Hash of the machine's hostname)
+        Bytes 7-8: PID (PID of the ObjectId-generating process)
+        Bytes 9-11: Increment (Incrementing counter that gives uniqueness within a seond in a process)
+
+
+    - If no '_id' key is present when a document is inserted, one will be automatically added to the
+        inserted document.  This can be handled by the Mongo server, but is more often done by the 
+        driver on the client side.
+
+
+
+- Using the Mongo Shell
+
+    - The shell can be connected to any Mongo instance that your machine can reach.  
+
+        # Specify the hostname, port, and db to connect to
+        $ mongo some-host:30000/myDB
+
+
+    - Sometimes, its useful to start the shell without connecting to a db, and connecting later.
+
+        # Start shell with no db
+        $ mongo --nodb
+
+        # Connect to host
+        > conn = new Mongo("some-host:30000")
+
+        # Connect to db
+        > db = conn.getDB("myDB")
+
+
+    - The 'help' command can be used in different contexts:
+
+        # Get list of help commands
+        > help
+
+        # Help on db methods
+        > db.help()
+
+        # Help con collection methods
+        > db.mycoll.help()
+
+
+        # Show database names
+        > show dbs
+
+        # Show collections in current database
+        > show collections
+
+
+        # Typing any method without parentheses will show you its implementation
+        > db.movies.updateOne
+
+
+
+- Running Scripts with the Shell
+
+    - In addition to using the shell interactively, you can also pass the shell JavaScript files to 
+        execute.
+
+        # Execute scripts
+        $ mongo script1.js script2.js script3.js
+
+        # Execute scripts on a non-default mongo instance
+        $ mongo --quiet server-1:30000/foo script1.js script2.js script3.js
+
+
+    - A script can also be run from within the shell.
+
+        # Run a script from the shell
+        > load("script1.js")
+
+
+    - Scripts have access to the 'db' variable (and other globals).  There are JavaScript methods that
+        are equivalent to the other shell helpers.
+
+        // Switch to db
+        db.getSisterDB("video")
+
+        // Get list of dbs
+        db.getMongo().getDBs()
+
+        // Get list of collections in a db
+        db.getCollectionNames()
+
+
+
+- Example Script
+
+    - We can also use scripts to inject variables into the shell.  For example, the following is a
+        script that initializes a helper function that connects to a locally running database on a given
+        port and database.
+
+
+        // defineConnectTo.js
+        var connectTo = function(port, dbname) {
+            if (!port) {
+                port = 27017;
+            }
+
+            if (!dbname) {
+                dbname = "test";
+            }
+
+            db = connect("localhost:" + port + "/" + dbname);
+            return db;
+        }
+
+
+    - Now, we can load this script into the shell, and the 'connectTo' function is defined.
+
+        > load('defineConnectTo.js')
+
+        > typeof connectTo
+        function
+
+
+
+- Running Command-Line Programs in the Shell
+
+    - We can use the 'run()' function to run command-line programs from the Mongo shell.
+
+        > run('ls', '-l', '/home/myUser/my-scripts/')
+
+
+
+- Creating a .mongorc.js File
+
+    - If you have frequently loaded scripts, you may want to put them in your .mongorc.js file.  This
+        file is executed whenever you start up the shell.  
+
+
+    - For example, we can create a greeting that will be displayed whenever we log into the shell.
+
+        // .mongorc.js
+        var compliment = ["attractive", "intelligent", "like Batman"];
+        var index = Math.floor(Math.random() * 3);
+
+        print("Hello, you're looking particularly " + compliment[index] + " today!");
+
+
+    - We can also use this technique to prevent certain functions from being executed.
+
+        // .mongorc.js
+        var no = function() {
+            print('Not on my watch.')
+        }
+
+        db.dropDatabase = DB.prototype.dropDatabase = no;
+        DBCollection.prototype.drop = no;
+        DBCollection.prototype.dropIndex = no;
+
+
+    - We can customize the prompt by setting the 'prompt' variable.
+
+        // .mongorc.js
+        prompt = function() {
+            return (new Date()) + "> ";
+        }
