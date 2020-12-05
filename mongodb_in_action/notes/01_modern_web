@@ -495,3 +495,43 @@
 
     - CouchDB doesn't partition data across nodes.  Each CouchDB nodes is a complete replica
         of every other.
+
+
+
+- Mongo for Web Applications
+
+    - Can run most of the same queries you can in a relational model.
+
+
+    - Can be useful for powering a high-traffic website.
+
+
+    - Many web applications use a caching layer to deliver content faster.  Since MongoDB is
+        faster, switching from a relational DB to Mongo can often allow you to remove the
+        Memcached layer altogether.
+
+
+
+- Mongo for Analytics and Logging
+
+    - Mongo's relavance to analytics derives from 2 key features:
+
+        1. Targeted atomic updates
+
+             Clients can efficiently increment counters and push values onto arrays.
+
+        2. Capped collections
+
+            Useful for logging, since they store only the most recent documents.
+              Also, storing logs in the database rather than the file system allows for
+              easier querying.
+
+
+
+- Tips and Limitations
+
+    - As with database servers in general, Mongo is best run on a dedicated server.
+
+
+    - Since Mongo uses JSON, including storing the key of every entry, it does not use
+        space particularly efficiently.
