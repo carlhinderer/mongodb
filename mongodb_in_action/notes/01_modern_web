@@ -366,3 +366,132 @@
     - 'Bsondump'
 
         Converts BSON files into human-readable formats like JSON.
+
+
+
+- Why Mongo?
+
+    - Designed to combine the best features of key-values and relational databases.
+
+      Key-Value stores are extremely fast and relatively easy to scale.  Relational 
+        databases are more difficult to scale, but have a rich data model and a
+        powerful query language.
+
+
+    - Mongo is well-suited for:
+
+        - a primary datastore for web applications
+        - analytics and logging applications
+        - any application requiring a medium-grade cache
+
+
+    - Mongo is also good for capturing data whose structure can't be known in advance.
+
+
+
+- Mongo vs Simple Key-Value Stores
+
+    - Simple key-value stores like are often used for caching.  For instance, cache a web page 
+        as {'url': 'html_page'}.  
+
+
+    - Simple key-value stores store the value as an opaque byte array.  There is no concept of
+        schema or data types.  You insert a value by key and can retrieve or delete it.
+        Systems with this simplicity are fast and scalable.
+
+
+    - The best-known is Memcached, which stores its data in memory only.  It trades durability
+        for speed.  Memcached nodes run-ning across multiple servers can act as a single datastore, 
+        eliminating the complexity of maintaining cache state across machines.
+
+
+    - Compared with Mongo, Memcached has faster reads and writes.  These systems cannot be used as
+        primary datastores.  They are best used as caching layers atop traditional DBs.
+
+
+
+- Mongo vs Sophisticated Key-Value Stores
+
+    - It’s possible to refine the simple key-value model to handle complicated read/write 
+        schemes or to provide a richer data model. In these cases, you end up with what we’ll
+        term a sophisticated key-value store.
+
+
+    - One example is Amazon Dynamo, which is designed to be a database robust enough to continue 
+        functioning in the face of network failures, datacenter outages, and similar disruptions.
+
+
+    - This requires that the system always be read from and written to, which essentially 
+        requires that data be automatically replicated across multiple nodes. If a node fails, a 
+        user of the system (ie a customer with a shopping cart) won’t experience any 
+        interruptions in service.
+
+
+    - Dynamo provides ways of resolving the inevitable conflicts that arise when a system allows 
+        the same data to be written to multiple nodes. At the same time, Dynamo is easily scaled. 
+        Because it’s masterless — all nodes are equal — it’s easy to understand the system as a 
+        whole, and nodes can be added easily.  
+
+
+    - Although Dynamo is a proprietary system, the ideas used to build it have inspired many 
+        systems falling under the NoSQL umbrella, including Cassandra, HBase, and Riak KV.
+
+
+    - By looking at who developed these sophisticated key-value stores, and how they’ve been used
+        in practice, you can see where these systems shine.  Let’s  take  Cassandra, which 
+        implements many of Dynamo’s scaling properties while providing a column-oriented data model
+        inspired by Google’s BigTable.  
+
+      Cassandra is an open source version of a datastore built by Facebook for its inbox search 
+        feature.  The  system scales horizontally to index more than 50 TB of inbox data, allowing 
+        for searches on inbox keywords and recipients.  Data is indexed by user ID, where each record 
+        consists of an array of search terms for keyword searches and an array of recipient IDs for
+        recipient searches.
+
+
+    - These sophisticated key-value stores were developed by major internet companies, such as Amazon,
+        Google, and Facebook to manage cross-sections of systems withe xtraordinarily large amounts  
+        of data.
+
+
+    - Because of their masterless architecture, these systems scale easily with the addition of nodes.
+        They opt for eventual consistency, which means that reads don’t necessarily reflect the latest 
+        write.  But what users get in exchange for weaker consistency is the ability to write in the 
+        face of any one node’s failure.
+
+
+    - MongoDB, on the other hand, provides strong consistency, a rich data model, and secondary
+        indexes.  You can fetch records by primary key.
+
+
+
+- Mongo vs Relational DBs
+
+    - SQL can be more expressive and easier to work with than Mongo's query language.  Also,
+        SQL is (mostly) portable between platforms.
+
+
+    - Some SQL databases are intended for analytics (or 'data warehousing') rather than as an
+        application database.  Usually data is imported in bulk and then queried by analysts
+        in these platforms.  Teradata Database is dominant in this space, and they offer
+        horizontally scalable databases.
+
+
+    - Apache Hive allows for running SQL queries over data stored in Hadoop.  Hive translates
+        a SQL query into a MapReduce job, which offers a scalable way of querying large
+        data sets.  These queries are intended for slow analytics queries, not to be used in 
+        an application.
+
+
+
+- Mongo vs CouchDB
+
+    - CouchDB's document model is similar, but data is stored in plain text JSON, as opposed
+        to Mongo's BSON.
+
+
+    - Secondary indexes in CouchDB are defined by writing map-reduce functions.
+
+
+    - CouchDB doesn't partition data across nodes.  Each CouchDB nodes is a complete replica
+        of every other.
