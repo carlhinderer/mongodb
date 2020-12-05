@@ -1,0 +1,105 @@
+-----------------------------------------------------------------------
+|  CHAPTER 2 - MONGODB THROUGH THE JAVASCRIPT SHELL                   |
+-----------------------------------------------------------------------
+
+- Databases and Collections
+
+    - To start the shell:
+
+        $ mongo
+
+
+    - Mongo stores related items in 'collections', which are similar to RDBMS tables.
+        Collections are divided into 'databases', which in Mongo are just namespaces.
+
+      At startup, the shell switches to a default database called 'test'.  To switch to
+        a different database:
+
+        > use tutorial
+
+
+    - Note that a database doesn't have to exist in order for you to switch to it.  Databases
+        and collections are created only when documents are first inserted.  This is 
+        consistent with Mongo's dynamic schema approach.
+
+      However, if you are worried about errors arising from this, you can set most drivers
+        to 'strict' mode to prevent careless errors.
+
+
+    - Mongo has both databases and collections due to Mongo writes data to disk.  All 
+        collections in a database are grouped in the same files.
+
+
+
+- Inserts and Queries
+
+    - Let's insert a document in the 'users' collection.
+
+        # Insert the user
+        > db.users.insert({username: "smith"})
+
+
+        # See the new document
+        > db.users.find()
+        { "_id" : ObjectId("552e458158cd52bcb257c324"), "username" : "smith" }
+
+
+    - The '_id' field is the document's primary key.  Every document requires this
+        field, and if it isn't present when the document is created, it will be 
+        added.
+
+      You can set your own '_id', otherwise it will be an instance of Mongo's default
+        ObjectID.
+
+
+    - To get the count in a collection:
+
+        # Add another user
+        > db.users.insert({username: "jones"})
+
+
+        # Get user count
+        > db.users.count()
+        2
+
+
+    - You can pass a query predicate to filter your results.
+
+        # Get all users with empty predicate
+        > db.users.find()
+
+
+        # Filter the results
+        > db.users.find({username: 'jones'})
+        { "_id" : ObjectId("552e542a58cd52bcb257c325"), "username" : "jones" }
+
+
+        # Filter on multiple fields (creates an implicit AND)
+        > db.users.find({
+        ... _id: ObjectId("552e458158cd52bcb257c324"),
+        ... username: "smith"
+        ... })
+
+        { "_id" : ObjectId("552e458158cd52bcb257c324"), "username" : "smith" }
+
+
+        # Can also use the explicit $and operator, query is the same
+        > db.users.find({ $and: [
+        ... { _id: ObjectId("552e458158cd52bcb257c324") },
+        ... { username: "smith" }
+        ... ] })
+
+        { "_id" : ObjectId("552e458158cd52bcb257c324"), "username" : "smith" }
+
+
+        # There is also an $or operator
+        > db.users.find({ $or: [
+        ... { username: "smith" },
+        ... { username: "jones" }
+        ... ]})
+
+        { "_id" : ObjectId("552e458158cd52bcb257c324"), "username" : "smith" }
+        { "_id" : ObjectId("552e542a58cd52bcb257c325"), "username" : "jones" }        
+
+
+        
