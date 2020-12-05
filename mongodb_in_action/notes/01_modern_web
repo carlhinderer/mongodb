@@ -275,3 +275,94 @@
 
     - Your application code doesn't need to handle any of these logistics.  It communicates
         with a sharded cluster just as it speaks to a single node.
+
+
+
+- The Mongo Core Server
+
+    - Mongo is written in C++ and runs on OSX, Windows, Solaris, and most flavors of Linux.
+
+
+    - The core database server runs via an executable called 'mongod'.  The data files on 
+        most Unix-like systems are stored in /data/db.
+
+
+    - mongod can be run in several modes, such as a standalone server or a member of a replica
+        set.  Replication is recommended in production.  You generally see replica set
+        configurations consisting of 2 replicas and one mongod in arbiter mode.
+
+
+    - When you use the sharding features, you will also run mongod in config server mode.
+        Also, a separate server called 'mongos' is used to send requests to the appropriate
+        instance in this kind of setup.
+
+
+
+- The JavaScript Shell
+
+    - The MongoDB command shell is a JavaScript-based tool for administering the DB and
+        and manipulating data.
+
+
+
+- Database Drivers
+
+    - All drivers have functionality toquery, retrieve results, write data, and run 
+        database commands.
+
+
+    - The representation of the document itself will usually be whatever is most natural 
+        to each language. In Ruby, that means using a Ruby hash. In Python, a dictionary 
+        is appropriate.
+
+
+    - As of v3.0, there are drivers available for:
+
+        C, C++, C#, Erlang,Java, Node.js, JavaScript, Perl, PHP, Python, Scala, and Ruby
+
+
+
+- Command-Line Tools
+
+    - 'mongodump' and 'mongorestore'
+
+        These are utilities for backing up and restoring a database.  'mongodump' saves the
+          database in its native BSON only.
+
+
+    - 'mongoexport' and 'mongoimport'
+
+        Export and import json, csv, and tsv data.
+
+
+    - 'mongosniff'
+
+        A wire-sniffing tool for viewing operations sent to the database.  It translates the
+          BSON to human-readable shell statements.
+
+
+    - 'mongostat'
+
+        Similar to 'iostat', constantly polls MongoDB and the system for performance
+          and resource utilization information.
+
+
+    - 'mongotop'
+
+        Similar to 'top', polls Mongo for the time spend reading and writing to each
+          collection.
+
+
+    - 'mongoperf'
+
+        Helps you understand the disk operations happening in a running MongoDB instance.
+
+
+    - 'mongooplog'
+
+        Shows what's happening in the MongoDB oplog.
+
+
+    - 'Bsondump'
+
+        Converts BSON files into human-readable formats like JSON.
