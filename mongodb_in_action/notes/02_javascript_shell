@@ -15,7 +15,15 @@
       At startup, the shell switches to a default database called 'test'.  To switch to
         a different database:
 
+        # Show databases
+        > show dbs
+
+        # Switch to database
         > use tutorial
+
+        # Show current database
+        > db
+        tutorial
 
 
     - Note that a database doesn't have to exist in order for you to switch to it.  Databases
@@ -26,7 +34,7 @@
         to 'strict' mode to prevent careless errors.
 
 
-    - Mongo has both databases and collections due to Mongo writes data to disk.  All 
+    - Mongo has both databases and collections due to how Mongo writes data to disk.  All 
         collections in a database are grouped in the same files.
 
 
@@ -102,4 +110,121 @@
         { "_id" : ObjectId("552e542a58cd52bcb257c325"), "username" : "jones" }        
 
 
-        
+
+- Updating Documents
+
+    - All updates require at least 2 arguments: the first specifies which documents to update
+        and the second specifies how they should be modified.
+
+
+    - The first type of update involves passing a document with some kind of operator 
+        description as the second argument.
+
+        # Operator update
+        > db.users.update({username: "smith"}, {$set: {country: "Canada"}})
+
+
+        # Look at the updated document
+        > db.users.find({username: 'smith'})
+
+
+    - Another way to update it is to replace it instead of just setting a field.
+
+        # Replacement update, username field is removed
+        > db.users.update({username: "smith"}, {country: "Canada"})
+
+      Don't forget to use the $set operator if you just want to update a single field!
+
+
+    - To remove a field, the $unset operator is used.
+
+        # Remove the country field
+        > db.users.update({username: "smith"}, {$unset: {country: 1}})
+
+
+
+- Updating Complex Data
+
+    - Let's say users can also store their favorite things:
+
+        {   
+          username: "smith",  
+          favorites: {
+             cities: ["Chicago", "Cheyenne"],
+             movies: ["Casablanca", "For a Few Dollars More", "The Sting"]
+          }
+        }
+
+
+    - To modify the original 'smith' record to look like this, we can use the $set
+        operator:
+
+        > db.users.update( {username: 'smith'},
+            {
+              $set: {
+                favorites: {
+                  cities: ["Chicago", "Cheyenne"],
+                  movies: ["Casablanca", "For a Few Dollars More", "The Sting"]
+                }
+              }
+            })
+
+
+    - We'll modify the 'jones' record also, but only include movies:
+
+        > db.users.update( {username: "jones"},
+            {
+              $set: {
+                favorites: {
+                  movies: ["Casablanca", "Rocky"]
+                }
+              }
+            })
+
+
+    - Now, we can check to make sure our updates succeeded:
+
+        > db.users.find().pretty()
+
+      By default, the 'find()' command will return 20 documents (if they're available).
+
+
+    - To find users by favorite movie:
+
+        > db.users.find({"favorites.movies": "Casablanca"})
+
+
+    - To add a movie to a user's favorite movies, we can use the '$addToSet' operator.
+
+        > db.users.update( {"favorites.movies": "Casablanca"},
+              {$addToSet: {"favorites.movies": "The Maltese Falcon"} },
+              false,
+              true )
+
+      Here, the third argument determines whether an upsert is allowed (whether to add the
+        'movies' set if it doesn't already exist).
+
+      The fourth argument determines whether this is a multi-update (whether to update 
+        multiple matching records or only the first one found).
+
+
+
+- Deleting Data
+
+
+- Creating a Querying With Indexes - Creating a Large Collection
+
+
+- Range Queries
+
+
+- Indexing and explain()
+
+
+- Basic Administration - Getting Database Information
+
+
+- How Commands Work
+
+
+- Getting Help

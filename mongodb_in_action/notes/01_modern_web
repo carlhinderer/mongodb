@@ -157,7 +157,7 @@
 
 - Replication
 
-    - Replica sets distributed data across 2 or more machines for redundancy and automate
+    - Replica sets distribute data across 2 or more machines for redundancy and automate
         failover in the event of server failures or network outages.
 
 
@@ -307,7 +307,7 @@
 
 - Database Drivers
 
-    - All drivers have functionality toquery, retrieve results, write data, and run 
+    - All drivers have functionality to query, retrieve results, write data, and run 
         database commands.
 
 
@@ -318,7 +318,7 @@
 
     - As of v3.0, there are drivers available for:
 
-        C, C++, C#, Erlang,Java, Node.js, JavaScript, Perl, PHP, Python, Scala, and Ruby
+        C, C++, C#, Erlang, Java, Node.js, JavaScript, Perl, PHP, Python, Scala, and Ruby
 
 
 
@@ -401,7 +401,7 @@
 
 
     - The best-known is Memcached, which stores its data in memory only.  It trades durability
-        for speed.  Memcached nodes run-ning across multiple servers can act as a single datastore, 
+        for speed.  Memcached nodes running across multiple servers can act as a single datastore, 
         eliminating the complexity of maintaining cache state across machines.
 
 
@@ -450,7 +450,7 @@
 
 
     - These sophisticated key-value stores were developed by major internet companies, such as Amazon,
-        Google, and Facebook to manage cross-sections of systems withe xtraordinarily large amounts  
+        Google, and Facebook to manage cross-sections of systems with extraordinarily large amounts  
         of data.
 
 
