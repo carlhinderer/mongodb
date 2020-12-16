@@ -211,11 +211,72 @@
 
 - Deleting Data
 
+    - To clear a collection of all it's documents:
+
+        > db.foo.remove()
+
+
+    - To delete a subset of documents based on a matcher:
+
+        > db.users.remove({"favorites.cities": "Cheyenne"})
+
+
+    - To drop an entire collection along with all it's indexes:
+
+        > db.users.drop()
+
+
+
+- Other Shell Features
+
+    - To get help for the shell:
+
+        > help
+
+
+    - To get help for a certain type of object:
+
+        > db.help()
+
+
+    - To get options that can be used when starting the Mongo shell:
+
+        $ mongo --help
+
+
 
 - Creating a Querying With Indexes - Creating a Large Collection
 
+    - Let's create a large collection by adding 20,000 simple documents to a 'numbers'
+        collection.
+
+        > for (i=0; i<20000; i++) {
+            db.numbers.save({num: i});
+          }
+
+
+    - To verify our new documents have been created:
+
+        > db.numbers.count()
+        > db.numbers.find()
+
+
+    - To find a given document:
+
+        > db.numbers.find({num: 500})
+
+
 
 - Range Queries
+
+    - You can run range queries using the $lt and $gt operators.
+
+        // Greater than 19995
+        > db.numbers.find( {num: {"$gt": 19995 }} )
+
+        // Retrieves 21-14
+        > db.numbers.find( {num: {"$gt": 20, "$lt": 25 }} )
+
 
 
 - Indexing and explain()
