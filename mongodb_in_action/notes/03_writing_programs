@@ -51,3 +51,13 @@
 
     # Get a single document based on matcher
     >>> user = users.find_one()
+
+
+
+- Deleting Documents
+
+    # Delete a document
+    >>> db.users.delete_one({'username': 'smith'})
+
+    # Delete all documents in a collection
+    >>> db.users.delete_many({})
