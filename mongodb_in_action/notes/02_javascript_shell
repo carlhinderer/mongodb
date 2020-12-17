@@ -348,8 +348,73 @@
 
 - Basic Administration - Getting Database Information
 
+    - List all the databases in the system:
+
+        > show dbs
+
+
+    - List all collections in a database:
+
+        > use tutorial
+
+        > show collections
+
+        numbers
+        system.indexes
+        users
+
+
+    - The 'system.indexes' collection is a special collection that exists for every 
+        database.  Each entry in the collection defines an index for the database, which
+        you can view using the 'getIndexes()' method.
+
+      Mongo 3.0 deprecates direct access to the 'system.indexes' collection, so the
+        'createIndexes' and 'listIndexes' methods should be used instead.
+
+
+    - For lower-level insight into databases and collections, the 'stats()' method is
+        useful.
+
+        > db.stats()
+        > db.numbers.stats()
+
+
 
 - How Commands Work
 
+    - Administrative commands like 'stats()' are known as 'database commands'.  They are
+        implemented as queries on a special virtual collection called '$cmd'.
+
+        // These are equivalent
+        > db.stats()
+        > db.runCommand( {dbstats: 1} )
+
+        // These are equivalent
+        > db.numbers.stats()
+        > db.runCommand( {collstats: "numbers"} )
+
+
+    - Mongo will print the implementation of any command if executing parentheses are
+        omitted.
+
+        > db.runCommand
+
+      You can see that this method just queries the $cmd collection.
+
+
+    - Run the collection stats command manually:
+
+        > db.$cmd.findOne( {collstats: "numbers"} );
+
+
 
 - Getting Help
+
+    - The 'help()' method will print a list of commonly used methods for operating on 
+        databases and collections.  The Mongo shell has tab completion.
+
+        // Get commands for databases
+        > db.help()
+
+        // Get commands for collections
+        > db.numbers.help()
