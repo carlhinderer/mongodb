@@ -29,9 +29,9 @@
 
 - Inserting Documents
 
-    # Insert some documents and get ObjectIds
-    >>> smith_id = users.insert_one({'username': 'smith'}).inserted_id
-    >>> jones_id = users.insert_one({'username': 'jones'}).inserted_id
+    # Insert some documents
+    >>> users.insert_one({'username': 'smith'})
+    >>> users.insert_one({'username': 'jones'})
 
 
 
@@ -51,6 +51,106 @@
 
     # Get a single document based on matcher
     >>> user = users.find_one()
+
+
+
+- Querying by ObjectId
+
+    # Insert user and get ObjectId back
+    >>> user_id = posts.insert_one(user).inserted_id
+    >>> user_id
+    ObjectId(...)
+
+    # Query by ObjectId
+    >>> users.find_one({"_id": user_id})
+
+    # Note that an ObjectId is not the same as its string representation
+    #   (This won't return anything.)
+    >>> users.find_one({"_id": user_id_as_string})
+
+    # If you get the ObjectId from a URL and want to query by it, need to convert it first
+    >>> from bson.objectid import ObjectId
+    >>> users.find_one({"_id": ObjectId(user_id)})
+
+
+
+- Note on Unicode Strings
+
+    - Mongo stores data in BSON format.  BSON strings are UTF-8 encoded, so Mongo must
+        ensure that any strings it stores contains only valid UTF-8 data.
+
+
+    - Regular strings (type 'str') are validated and stored unaltered.  Unicode strings
+        (type 'unicode') are encoded UTF-8 first.  The strings we'll see in our application
+        will by u'Sample', because PyMongo decodes each BSON string into a Python unicode
+        string.
+
+
+
+- Bulk Inserts
+
+    # Define some new users
+    >>> davis = {'username': 'Davis', 'instrument': 'trumpet', 'birth': 1926}
+    >>> coltrane = {'username': 'Coltrane', 'instrument': 'saxaphone', 'birth': 1926}
+
+    # Add multiple documents
+    >>> result = users.insert_many([davis, coltrane])
+    >>> result.inserted_ids
+    [ObjectId('...'), ObjectId('...')]
+
+
+
+- Querying More Than One Document
+
+    - The find() method returns a Cursor instance, which allows us to iterate
+        over matching documents.
+
+    # Return all users
+    >>> import pprint
+    >>> for user in users.find():
+            ppprint.pprint(user)
+
+    # Return all users based on a matcher
+    >>> for user in users.find({'username': 'smith'}):
+            pprint.pprint(user)
+
+
+
+- Counting
+
+    # Get number of users in collection
+    >>> users.count_documents({})
+
+    # Get number of users based on a matcher
+    >>> users.count_documents({'instrument': 'trumpet'})
+
+
+
+- Range Queries
+
+    # Results older than a certain date
+    >>> d = datetime.datetime(2009, 11, 12, 12)
+    >>> for user in users.find({"date": {"$lt": d}}).sort("author"):
+            pprint.pprint(user)
+
+
+
+- Indexing
+
+    # Create an index which rejects documents for which the key already exists
+    >>> result = db.users.create_index(['username', pymongo.ASCENDING], unique=True)
+    >>> sorted(list(db.profiles.index_information()))
+
+    # Now, add some users
+    >>> user_profiles = [
+            {'username': 'smith', first_name: 'James'},
+            {'username': 'jones', first_name: 'Brian'}]
+    >>> result = db.users.insert_many(user_profiles)
+
+    # We'll be prevented from inserting documents whose 'username' is already in collection
+    >>> duplicate = {'username': 'smith', first_name: 'Joe'}
+    >>> result = db.users.insert_one(duplicate)
+    DuplicateKeyError
 
 
 
