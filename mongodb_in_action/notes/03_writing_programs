@@ -1,0 +1,20 @@
+-----------------------------------------------------------------------
+|  CHAPTER 3 - WRITING PROGRAMS WITH MONGODB                          |
+-----------------------------------------------------------------------
+
+- Install the Python mongo client:
+
+    $ pip install pymongo
+    $ pip install bson
+
+
+
+- Make a connection with the MongoClient
+
+    connect.py
+    --------------------------------
+    from pymongo import MongoClient
+
+    client = MongoClient('localhost', 27017)
+    db = client.tutorial
+    collection = db.users

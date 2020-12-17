@@ -213,7 +213,7 @@
 
     - To clear a collection of all it's documents:
 
-        > db.foo.remove()
+        > db.foo.remove({})
 
 
     - To delete a subset of documents based on a matcher:
