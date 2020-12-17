@@ -281,6 +281,70 @@
 
 - Indexing and explain()
 
+    - We can run an explain plan on any query.  This is helpful when diagnosing
+        performance issues.
+
+        > db.numbers.find({num: {"$gt": 19995}}).explain("executionStats")
+
+        "executionStats" : {        
+            "executionSuccess" : true,
+            "nReturned" : 4,
+            "executionTimeMillis" : 8,
+            "totalKeysExamined" : 0,
+            "totalDocsExamined" : 20000,
+            ...
+        }
+
+
+    - Next, we create an index to speed up performance:
+
+        > db.numbers.createIndex({num: 1}) {    
+            "createdCollectionAutomatically" : false,
+            "numIndexesBefore" : 1,
+            "numIndexesAfter" : 2,    
+            "ok" : 1
+          }
+
+
+    - To see the indexes we have on the collections:
+
+        > db.numbers.getIndexes()
+
+        [    
+          {        
+            "v" : 1,
+            "key" : {
+              "_id" : 1
+            },
+            "name" : "_id_",
+            "ns" : "tutorial.numbers"
+          },    
+          {
+            "v" : 1,
+            "key" : {
+              "num" : 1
+            },
+            "name" : "num_1",
+            "ns" : "tutorial.numbers"
+          }
+        ]
+
+
+    - Now, when we run the query again, we'll see that we get much faster performance, only
+        scanning the documents that match our criteria:
+
+        > db.numbers.find({num: {"$gt": 19995}}).explain("executionStats")
+
+        "executionStats" : {
+          "executionSuccess" : true,
+          "nReturned" : 4,
+          "executionTimeMillis" : 0,
+          "totalKeysExamined" : 4,
+          "totalDocsExamined" : 4,
+          ...
+        }
+
+
 
 - Basic Administration - Getting Database Information
 
