@@ -9,12 +9,45 @@
 
 
 
-- Make a connection with the MongoClient
+- Connecting with the MongoClient
 
-    connect.py
-    --------------------------------
-    from pymongo import MongoClient
+    >>> from pymongo import MongoClient
 
-    client = MongoClient('localhost', 27017)
-    db = client.tutorial
-    collection = db.users
+    # Connect to the default IP and port
+    >>> client = MongoClient('localhost', 27017)
+
+    # Use the database
+    >>> db = client.tutorial
+
+    # List collections in the database
+    >>> db.list_collection_names()
+
+    # Get the collection
+    >>> users = db.users
+
+
+
+- Inserting Documents
+
+    # Insert some documents and get ObjectIds
+    >>> smith_id = users.insert_one({'username': 'smith'}).inserted_id
+    >>> jones_id = users.insert_one({'username': 'jones'}).inserted_id
+
+
+
+- Inserting Documents with Timestamps
+
+    >>> import datetime
+
+    >>> user = {'username': 'smith', 'created_date': datetime.datetime.utcnow()}
+    >>> users.insert_one(user)
+
+
+
+- Finding a Single Document
+
+    # Get the first document
+    >>> user = users.find_one()
+
+    # Get a single document based on matcher
+    >>> user = users.find_one()

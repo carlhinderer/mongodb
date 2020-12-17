@@ -226,6 +226,12 @@
         > db.users.drop()
 
 
+    - To drop a database:
+
+        > use numbers
+        > db.dropDatabase()
+
+
 
 - Other Shell Features
 
