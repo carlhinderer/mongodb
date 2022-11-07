@@ -7,7 +7,12 @@ CHAPTER 1 - INTRO
     1. Ease of Use
 
          - MongoDB is a document-oriented database, not a relational one.  A document is analagous to a
-             row in a table.
+             row in a table.  The primary reason for moving away from the relational model is to make
+             scaling out easier, but there are other advantages as well.
+
+         - A document-oriented database replaces the concept of a 'row' with a more flexible model, the
+             'document'.  A document can have emebedded documents and arrays, so complex hierarchical
+             relationships can be represented with a single record.
 
          - There are no predefined schemas.  A document's keys and values are not of fixed types or sizes.
              This makes adding and removing fields easier.  This makes it easier to prototype and iterate.
@@ -31,8 +36,9 @@ CHAPTER 1 - INTRO
              This allows complex analytics engines to be built.
 
          - Mongo supports special collection and index types.  TTL collections for data that should expire
-             at a certain time, such as for sessions or capped collections.  Partial indexes for 
-             documents that match a filter are also supported.
+             at a certain time, such as for sessions or capped collections are included.  These are useful for holding recent data, such as logs.
+
+         - Partial indexes for  documents that match a filter are also supported.
 
          - Mongo supports an easy-to-use protocol for storing large files and file metadata.
 

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  database:
+    image: 'mongo'
+    container_name: 'my-mongo-container'
+    environment:
+      - MONGO_INITDB_DATABASE=my-database
+      - MONGO_INITDB_ROOT_USERNAME=mongouser
+      - MONGO_INITDB_ROOT_PASSWORD=mongopw
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - '27017-27019:27017-27019'
+
+volumes:
+  mongo_data:
+    driver: local

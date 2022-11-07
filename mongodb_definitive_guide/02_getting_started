@@ -65,7 +65,7 @@ CHAPTER 2 - GETTING STARTED
         of documents to search, and we can create indexes on individual collections.
 
 
-    - Collections have a unique UTF-8 name.  The can contain any character besides '\0', ' ', or '$',
+    - Collections have a unique UTF-8 name.  The can contain any character besides '', '\0', ' ', or '$',
         and cannot begin with 'system.'
 
 
@@ -80,19 +80,22 @@ CHAPTER 2 - GETTING STARTED
         each of which groups together 0 or more collections.
 
 
+    - A good rule of thumb is to put all the data for a single application in the same database.
+
+
     - Databases also have a name.  They cannot contain spaces and should consist of alphanumeric ASCII.
         Database names are case-sensitive, and to keep things simple, we can just use lowercase names.
 
 
-    - The database names will actually end up as files on your filesystem, which is the reasons for the
-        restrictions on the names.
+    - Historically, prior to the WiredTiger storage engine, database names became files on your filesystem, 
+        which is the reasons for the restrictions on the names.
 
 
     - There are several reserved names, because they refer to special databases that may be present in
         your system.  
 
         admin  = The 'admin' database plays a role in authentication and authorization.  Also, access to
-                   this database is rqeuired for some admin operations.
+                   this database is required for some admin operations.
 
         local  = The 'local' database stores data specific to a single server.  In replica sets, this
                    database stores data used in the replication process.  The 'local' database itself
@@ -142,7 +145,7 @@ CHAPTER 2 - GETTING STARTED
     - The JavaScript shell is used to interact with the server.
 
         # Run the shell
-        $ mongo
+        $ mongosh -u mongouser -p mongopw
 
 
         # All the standard JavaScript syntax and libraries work in the shell
@@ -198,7 +201,7 @@ CHAPTER 2 - GETTING STARTED
 
     - The 'find' and 'findOne' functions can be used to query a collection.
 
-        # See the movies in our collection
+        # See the movies in our collection (up to 20 documents)
         > db.movies.find()
 
         {
@@ -227,8 +230,8 @@ CHAPTER 2 - GETTING STARTED
         criteria to find which document to update and the new document.
 
         # Add field for reviews in our document
-        > db.movies.update({title : "Star Wars: Episode IV - A New Hope"},
-                           {$set : {reviews: []}})
+        > db.movies.updateOne({title : "Star Wars: Episode IV - A New Hope"},
+                              {$set : {reviews: []}})
 
         { "acknowledged" : true, "matchedCount" : 1, "modifiedCount" : 1 }
 
@@ -323,6 +326,7 @@ CHAPTER 2 - GETTING STARTED
         we always call 'new Date()'.   Calling the constructor as a function ('Date()') without 'new'
         returns a string representation of the date, not an actual 'Date' object.
 
+
     - Dates in the shell are displayed using local time zone settings.  However, dates in the database
         are just stored as milliseconds since the epoch, with no time zone information.
 
@@ -333,8 +337,10 @@ CHAPTER 2 - GETTING STARTED
     - Arrays can be used for both ordered operations (as lists, stacks, or queues) and unordered operations
         (as sets).  Arrays are heterogenous.  
 
+
     - Mongo understands array structures and knows how to reach inside of arrays to perform operations
         on their contents.  This allows us to query on arrays and build indexes using their contents.
+
 
     - Mongo also allows atomic updates that modify the contents of arrays.
 
@@ -342,16 +348,26 @@ CHAPTER 2 - GETTING STARTED
 
 - Embedded Documents
 
-    - Documents can be used as the value for a key.  
+    - Documents can be used as the value for a key.  For instance, 'address' is the key and the address
+        information is the value.
 
         {
           "name" : "John Doe",
-          "address" {
+          "address": {
             "street" : "123 Park Street",
             "city" : "Anytown",
             "state" : "NY"
           }
         }
+
+
+    - As with arrays, Mongo understands the structure of embedded documents and is able to reach inside
+        them to build indexes, perform queries, or make updates.
+
+
+    - Note that just with this small example, we can see how data modeling is different from relational
+        databases, where name and address would likely be stored in separate tables.  When used properly,
+        embedded documents can provide a more natural representation of information.
 
 
 
@@ -361,6 +377,7 @@ CHAPTER 2 - GETTING STARTED
         it defaults to an 'ObjectId'.  In a single collection, every document must have a unique value
         for "_id", which ensures that every document in a collection can be uniquely identified.
 
+
     - The 'ObjectId' class is designed to be lightweight, while still being easy to generate in a globally
         unique way across different machines.  Mongo's distributed nature is the reason why it uses
         ObjectIds as opposed to something more traditional like an auto-incrementing primary key.
@@ -368,10 +385,14 @@ CHAPTER 2 - GETTING STARTED
 
     - The ObjectId is 12 bytes:
 
-        Bytes 0-3: Timestamp (Second; this means documents will be sorted in roughly insertion order)
-        Bytes 4-6: Machine (Hash of the machine's hostname)
-        Bytes 7-8: PID (PID of the ObjectId-generating process)
-        Bytes 9-11: Increment (Incrementing counter that gives uniqueness within a seond in a process)
+        Bytes 0-3: Timestamp in seconds since epoch
+        Bytes 4-8: Random value (hash of machine hostname and pid)
+        Bytes 9-11: Increment (Incrementing counter that gives uniqueness within a second in a process)
+
+
+    - The value of the first 9 bytes of an 'ObjectId' therefore guarantee uniqueness across machines and
+        processes for a single second.  The last 3 bytes provide for uniqueness within a single second
+        in a single process.
 
 
     - If no '_id' key is present when a document is inserted, one will be automatically added to the
@@ -408,7 +429,7 @@ CHAPTER 2 - GETTING STARTED
         # Help on db methods
         > db.help()
 
-        # Help con collection methods
+        # Help on collection methods
         > db.mycoll.help()
 
 
@@ -434,6 +455,10 @@ CHAPTER 2 - GETTING STARTED
 
         # Execute scripts on a non-default mongo instance
         $ mongo --quiet server-1:30000/foo script1.js script2.js script3.js
+
+
+    - You can print to stdout in scripts by using the 'print' function.  This allows you to use the shell
+        as part of a pipeline for commands.
 
 
     - A script can also be run from within the shell.
@@ -528,3 +553,42 @@ CHAPTER 2 - GETTING STARTED
         prompt = function() {
             return (new Date()) + "> ";
         }
+
+
+
+- Editing Complex Variables
+
+    - The multiline support in the shell is limited, and you cannot edit previous lines.  So, you may want
+        to edit larger blocks of code or objects in an editor.
+
+
+    - To set the editor you want to use, set the 'EDITOR' variable in the shell:
+
+        > EDITOR="/usr/bin/emacs"
+
+
+    - Now, if you want to edit a variable, you can say 'edit varname':
+
+        > var wap = db.books.findOne({title: "War and Peace"});
+        > edit wap
+
+
+    - If you add EDITOR="/path/to/editor"; in your .mongorc.js file, you won't have to worry about setting
+        it again.
+
+
+
+- Inconvenient Collection Names
+
+    - Fetching a collection with the 'db.collectionName' syntax almost always works, unless the collection
+        name is a reserved word or an invalid JavaScript property name.
+
+
+    - For instance, if we named a collection 'version', we cannot reference it with 'db.version' since this
+        is a method on 'db'.  Instead, we use the 'getCollection' function:
+
+        > db.getCollection("version");
+
+
+    - This same method can be used for collection names that aren't valid JavaScript property names
+        (which can only contain letters, numbers, $ and _, and cannot start with a number).
