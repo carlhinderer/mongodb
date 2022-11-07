@@ -14,7 +14,7 @@ CHAPTER 3 - CRUD
 
         > db.movies.insertMany([{'title': 'Ghostbusters'},
                                 {'title': 'E.T.'},
-                                {'title': 'Blade Runner'}]);
+                                {'title': 'Blade Runner'}])
 
 
     - Current versions of Mongo don't support messages longer than 48 MB, so there is a hard limit to how
@@ -40,11 +40,15 @@ CHAPTER 3 - CRUD
             {'_id' : 4, 'title' : 'The Terminator'},
             {'_id' : 4, 'title' : 'The Princess Bride'},
             {'_id' : 5, 'title' : 'Scarface'}],
-          {'ordered': false})
+            {'ordered': false})
 
 
     - The validation done on insert operations is minimal.  It checks the document's basic structure, adds
         an '_id' field if one does not exist, and makes sure all documents are less than 16 MB.
+
+      This means that you should only allow trusted sources, such as your application servers, to connect
+        to the database.  All of the Mongo drivers for major languages check for other things (ie UTF-8
+        strings, types) before sending data to the database.
 
 
     - In Mongo versions <3.0, the 'insert' operation was the primary method for inserting documents.  As
@@ -161,11 +165,22 @@ CHAPTER 3 - CRUD
                                  {'$inc' : {'pageviews' : 1}})
 
 
+    - Note that when using operators, the '_id' value cannot be changed.  It can be changed by doing 
+        whole-document replacement.
+
+
+
+- Using the $set Modifier
+
     - The '$set' modifier sets the value of a field.  If the field does not yet exist, it will be 
         created.  
 
         > db.users.updateOne({'_id' : ObjectId('4b253b067525f35f94b60a31')},
                              {'$set' : {'favorite book' : 'War and Peace'}})
+
+
+    - $set can even change the type of the key it modifies.  For instance, the value can be changed from a
+        single string to an array.
 
 
     - To remove a key from the document, the '$unset' modifier can be used.
@@ -178,6 +193,9 @@ CHAPTER 3 - CRUD
 
         > db.blog.posts.updateOne({'author.name' : 'joe'},
                                   {'$set' : {'author.name' : 'joe schmoe'}})
+
+
+    - You must always use a $- modifier for adding, changing, or removing keys.
 
 
 
@@ -220,7 +238,8 @@ CHAPTER 3 - CRUD
 
 
     - We can also limit the size of the array by using the '$slice' modifier to prevent an array from 
-        growing beyond a certain size.
+        growing beyond a certain size.  Here, if the array is longer than 10 elements, only the last
+        10 elements will be kept.
 
         // Limit the array to the last 10 elements pushed
         > db.movies.updateOne({'genre' : 'horror'},
@@ -229,7 +248,8 @@ CHAPTER 3 - CRUD
                                              '$slice' : -10} })
 
 
-    - We can even sort the objects before slicing them.
+    - We can even sort the objects before slicing them.  Here, the objects in the array are sorted by their
+        rating, and only the 10 best are kept.
 
         // Sort by rating, then limit size to 10
         db.movies.updateOne({'genre' : 'horror'},
@@ -239,6 +259,9 @@ CHAPTER 3 - CRUD
                                                                'rating' : 4.3}]
                                                    '$slice' : -10,
                                                    '$sort' : {'rating' : -1}} ]})
+
+
+    - Note that you must include $each if you are using $slice or $sort.
 
 
 
@@ -257,6 +280,13 @@ CHAPTER 3 - CRUD
         // Add an email address if it isn't already present
         > db.users.updateOne({'_id' : ObjectId("4b2d75476cc613d5ee930164"},
                              {'$addToSet' : {'emails' : 'joe@example.com'}})
+
+
+    - You can also use $addToSet along with $each to add multiple unique values.
+
+        > db.users.updateOne({"_id" : ObjectId("4b2d75476cc613d5ee930164")},
+                             {"$addToSet" : {"emails" : {"$each" :
+                                ["joe@php.net", "joe@example.com", "joe@python.org"]}}})
 
 
 
@@ -316,8 +346,46 @@ CHAPTER 3 - CRUD
                             {'$inc' : {'comments.0.votes' : 1}})
 
 
+    - In many cases, we don't know what index of the array to modify without querying for the document first
+        and examining it.  To get around this, the $ operator is used to match the element and update it.
+        Only the first match will be updated.
+
+        > db.blog.updateOne({"comments.author" : "John"}, 
+                            {"$set" : {"comments.$.author" : "Jim"}})
+
+
+    - Mongo 3.6 introduced 'arrayFilters' for updating individual array elements matching particular 
+        criteria.  For instance, to hide all comments with 5 or more downvotes:
+
+        db.blog.updateOne(
+          {"post" : post_id },
+          { $set: { "comments.$[elem].hidden" : true } },
+          {
+            arrayFilters: [ { "elem.votes": { $lte: -5 } } ]
+          }
+        )
+
+
 
 - Upserts
+
+    - Without an upsert, we may try to find a URL and increment the number of views, or create a new
+        document if the URL doesn't exist:
+
+        blog = db.analytics.findOne({url : "/blog"})
+        
+        if (blog) {
+          blog.pageviews++;
+          db.analytics.save(blog);
+        }
+        else {
+          db.analytics.insertOne({url : "/blog", pageviews : 1})
+        }
+
+
+    - This means we are making 2 round trips to the database, and also introduces the possibility of race
+        conditions if 2 processes try to insert a URL at the same time.
+
 
     - With upserts, if no document is found that matches the update criteria, a new document will be 
         created by combining the criteria and updated documents.  If a matching update is found, it will
@@ -327,6 +395,14 @@ CHAPTER 3 - CRUD
         > db.analytics.updateOne({'url' : '/blog'},
                                  {'$inc' : {'pageviews' : 1}},
                                  {'upsert' : true})
+
+
+    - Sometimes, a fields needs to only be set when a document is created, but not changed on subsequent
+        updates.  The $setOnInsert operator is used for this.
+
+        db.users.updateOne({}, {"$setOnInsert" : {"createdAt" : new Date()}},
+                               {"upsert" : true})
+
 
 
 - The 'save' Shell Helper
@@ -366,3 +442,14 @@ CHAPTER 3 - CRUD
         db.processes.findOneAndUpdate({"status" : "READY"},
                                       {"$set" : {"status" : "RUNNING"}},
                                       {"sort" : {"priority" : -1}, "returnNewDocument": true})
+
+
+    - If we include the 'returnNewDocument' option, the updated document will be returned.  For instance:
+
+        ps = db.processes.findOneAndUpdate({"status" : "READY"},
+                                           {"$set" : {"status" : "RUNNING"}},
+                                           {"sort" : {"priority" : -1},
+                                            "returnNewDocument": true})
+
+        do_something(ps)
+        db.process.updateOne({"_id" : ps._id}, {"$set" : {"status" : "DONE"}})
