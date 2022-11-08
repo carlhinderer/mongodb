@@ -4,7 +4,8 @@ CHAPTER 4 - QUERYING
 
 - The 'find' Method
 
-    - The 'find' method is used to perform queries in Mongo.  
+    - The 'find' method is used to perform queries in Mongo.  Which documents from the collection get 
+        returned is determined by the first argument to 'find', the 'query document'.
 
         // Returns all documents in the collection
         > db.c.find()
@@ -16,7 +17,8 @@ CHAPTER 4 - QUERYING
         > db.users.find({'username' : 'joe', 'age' : 27})
 
 
-    - You can specify which keys to return.
+    - You can specify which keys to return by passing a second document to 'find'.  Note that the '_id' key 
+        is returned by default, unless you explicitly exclude it.
 
         // Return only the username and email keys
         > db.users.find({}, {'username' : 1, 'email' : 1})
@@ -25,7 +27,12 @@ CHAPTER 4 - QUERYING
         > db.users.find({}, {'fatal_weakness' : 0})
 
 
-    - Note that query documents must be constants as far as the database is concerned.
+
+- Limitations
+
+    - Note that query documents must be constants as far as the database is concerned.  It cannot refer to
+        the value of another key in the document.  For instance, if we have both 'in_stock' and 'num_sold'
+        keys, we can't compare them to each other.
 
         // This won't work
         > db.stock.find({'in_stock' : 'this.num_sold'})
@@ -114,4 +121,89 @@ CHAPTER 4 - QUERYING
 
 
 
-- Using $ALL
+- Using $all
+
+    - If you need to match arrays by more than one element, you can use $all.  This allows you to match
+        a list of elements.  Ordering does not matter with $all.
+
+        // Create a collection with 3 elements
+        > db.food.insertOne({"_id" : 1, "fruit" : ["apple", "banana", "peach"]})
+        > db.food.insertOne({"_id" : 2, "fruit" : ["apple", "kumquat", "orange"]})
+        > db.food.insertOne({"_id" : 3, "fruit" : ["cherry", "banana", "apple"]})
+
+        // Find all documents with both 'apple' and 'banana' elements
+        > db.food.find({fruit : {$all : ["apple", "banana"]}})
+
+
+    - You can also do an exact match of the array by omitting all.  In this case, ordering does matter, so
+        if the elements aren't ordered in the same way, it won't match.
+
+        > db.food.find({"fruit" : ["apple", "banana", "peach"]})
+
+
+    - To query for a specific element at a specific position:
+
+        > db.food.find({"fruit.2" : "peach"})
+
+
+
+- Using $size
+
+    - The $size conditional allows you to query for arrays of a given size.
+
+        > db.food.find({"fruit" : {"$size" : 3}})
+
+
+
+- Using $slice
+
+    - The $slice operator can be used to return a subset of elements for an array key.
+
+        // Return the first 10 comments
+        > db.blog.posts.findOne(criteria, {"comments" : {"$slice" : 10}})
+
+        // Return the last 10 comments
+        > db.blog.posts.findOne(criteria, {"comments" : {"$slice" : -10}})
+
+
+    - $slice can also return pages in the middle of the results by taking an offset and the number of
+        elements to return.
+
+        // Return elements 23-33
+        > db.blog.posts.findOne(criteria, {"comments" : {"$slice" : [23, 10]}})
+
+
+    - Unless otherwise specified, all keys in a document are 
+
+
+
+- Returning a Matching Array Element
+
+    - 
+
+
+- Array and Range Query Interactions
+
+
+- Querying on Embedded Documents
+
+
+- $where Queries
+
+
+- Cursors
+
+
+- Limits, Skips, and Sorts
+
+
+- Avoiding Large Skips
+
+
+- Paginating Results Without skip
+
+
+- Finding a Random Document
+
+
+- Immortal Cursors
